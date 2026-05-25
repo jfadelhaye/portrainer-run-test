@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ghost-ghost-data
+  namespace: default
+  labels:
+    app: ghost
+    managed-by: portainer-run
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ghost-mysql-data
+  namespace: default
+  labels:
+    app: ghost
+    managed-by: portainer-run
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  namespace: default
+  labels:
+    app: ghost
+    managed-by: portainer-run
+  annotations:
+    portainer-run/git-target-id: a8a84caf-60d9-42bf-9aa2-1aba15993ced
+    portainer-run/git-branch: main
+    portainer-run/git-path: prun/default/ghost.yaml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+        managed-by: portainer-run
+    spec:
+      containers:
+        - name: ghost
+          image: ghost:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: database__client
+              value: mysql
+            - name: database__connection__host
+              value: localhost
+            - name: database__connection__user
+              value: ghost
+            - name: database__connection__password
+              value: changeme
+            - name: database__connection__database
+              value: ghost
+          volumeMounts:
+            - name: ghost-ghost-data
+              mountPath: /var/lib/ghost/content
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: MYSQL_DATABASE
+              value: ghost
+            - name: MYSQL_USER
+              value: ghost
+            - name: MYSQL_PASSWORD
+              value: changeme
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: '1'
+          volumeMounts:
+            - name: ghost-mysql-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: ghost-ghost-data
+          persistentVolumeClaim:
+            claimName: ghost-ghost-data
+        - name: ghost-mysql-data
+          persistentVolumeClaim:
+            claimName: ghost-mysql-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost
+  namespace: default
+  labels:
+    app: ghost
+    managed-by: portainer-run
+spec:
+  selector:
+    app: ghost
+  type: NodePort
+  ports:
+    - name: port-2368
+      port: 2368
+      targetPort: 2368
+      protocol: TCP
