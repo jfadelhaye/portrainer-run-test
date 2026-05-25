@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats
+  namespace: prun
+  labels:
+    app: nats
+    managed-by: portainer-run
+  annotations:
+    portainer-run/git-target-id: a8a84caf-60d9-42bf-9aa2-1aba15993ced
+    portainer-run/git-branch: porun
+    portainer-run/git-path: prun/prun/nats.yaml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+        managed-by: portainer-run
+    spec:
+      containers:
+        - name: ants
+          image: nats
+          imagePullPolicy: Always
